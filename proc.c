@@ -7,8 +7,13 @@
 #include "proc.h"
 #include "spinlock.h"
 
+struct {
+  struct spinlock lock;
+  struct proc proc[NPROC];
+  // implementacao de fila de prioridade
+} ptable;
+
 // implementacao de fila de prioridade
-#define MAX_PRIO 3;
 
 struct queue{
   struct proc *proc[NPROC];
@@ -42,12 +47,19 @@ dequeue(struct proc *p, int *front, int *rear, struct proc *proc[])
   (*front)++;
 }
 
-struct {
-  struct spinlock lock;
-  struct proc proc[NPROC];
-  // implementacao de fila de prioridade
-  struct proc *queue[3][NPROC];
-} ptable;
+static struct queue pqueue[3];
+
+void
+push(struct proc *p){
+  int prio = p->priority - IDX;
+  pqueue[prio].enqueue(p, pqueue[prio].front, pqueue[prio].rear, pqueue[prio].proc);
+}
+
+void 
+pop(struct proc *p){
+  int prio = p->priority - IDX;
+  pqueue[prio].dequeue(p, pqueue[prio].front, pqueue[prio].rear, pqueue[prio].proc);
+}
 
 static struct proc *initproc;
 
@@ -148,12 +160,6 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
-
-  // implementacao de fila de prioridade
-  p->prio = 2;
-  for (int i = 0; i < NPROC; i++)
-    if (!ptable.queue[p->prio-1][i])
-      ptable.queue[p->prio-1][i] = p;
 
   return p;
 }
@@ -375,12 +381,6 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    for(int q = (int) MAX_PRIO; q > 0; q--) {
-      for(p = ptable.queue[q]; p < &ptable.queue[q][NPROC]; p++){
-        if(p->state != RUNNABLE)
-          continue;
-      }
-    }
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
