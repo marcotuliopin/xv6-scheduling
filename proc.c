@@ -611,3 +611,15 @@ procclock(void){
       p->stime++;
   }
 }
+
+void
+growprio(void){
+  struct proc *p;
+
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->priority == 1 && (ticks - p->ctime) % TO2 == 0)
+      p->priority = 2;
+    else if(p->priority == 2 && (ticks - p->ctime) % TO3 == 0)
+      p->priority = 3;
+  }
+}

@@ -52,6 +52,7 @@ trap(struct trapframe *tf)
       acquire(&tickslock);
       ticks++;
       procclock();
+      growprio();
       wakeup(&ticks);
       release(&tickslock);
     }
