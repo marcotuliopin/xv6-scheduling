@@ -83,7 +83,7 @@ push(struct proc *p){
 void 
 pop(struct proc *p){
   int prio = p->priority - IDX;
-  if(pqueue[prio].dequeue(p, pqueue[prio].front, pqueue[prio].rear, pqueue[prio].proc) == -1)
+  if(pqueue[prio].dequeue(pqueue[prio].front, pqueue[prio].rear, pqueue[prio].proc) == -1)
     cprintf("Error while poping from queue %d\n", prio);
 }
 
