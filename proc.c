@@ -71,7 +71,8 @@ qinit(void){
   }
 }
 
-// Interface para adicionar processos na fila.
+// Interface para adicionar processos na fila. Processos sao adicionados
+// ao fim da fila.
 void
 push(struct proc *p){
   int prio = p->priority - IDX;
@@ -79,10 +80,13 @@ push(struct proc *p){
     cprintf("Error while pushing to queue %d\n", prio);
 }
 
-// Interface para remover processos da fila.
+// Interface para remover processos da fila. Um processo so pode
+// ser removido se ele for o primeiro da fila.
 void 
 pop(struct proc *p){
   int prio = p->priority - IDX;
+  if(p != pqueue[prio].proc[pqueue[prio].front])
+    cprintf("Error: process is not first in the queue\n");
   if(pqueue[prio].dequeue(pqueue[prio].front, pqueue[prio].rear, pqueue[prio].proc) == -1)
     cprintf("Error while poping from queue %d\n", prio);
 }
