@@ -98,6 +98,6 @@ sys_change_prio(void)
 
   if(argint(0, &prio) < 0)
     return -1;
-  myproc()->prio = prio;
+  myproc()->priority = prio;
   return 0;
 }

@@ -23,28 +23,27 @@ struct queue{
   void (*dequeue)(struct proc *p, int *front, int *rear, struct proc *proc[]);
 };
 
-void
+int
 enqueue(struct proc *p, int *front, int *rear, struct proc *proc[])
 {
-  if(*rear == NPROC - 1) // loop back to beggining of the queue
-    *rear = -1;
-
-  if(*rear + 1 == front) // queue is full
+  if((*rear + 1) % NPROC == front) // Queue is full.
     return -1; 
 
+  *rear = (*rear + 1) % NPROC;
   proc[++(*rear)] = p;
+
+  return 0;
 }
 
-void
-dequeue(struct proc *p, int *front, int *rear, struct proc *proc[])
+int
+dequeue(int *front, int *rear, struct proc *proc[])
 {
-  if(*front == *rear) // queue is empty
+  if(*front == *rear) // Queue is empty.
     return -1;
 
-  if(*front == NPROC - 1) // loop back to beggining of the queue
-    *front = -1;
+  *front = (*front + 1) % NPROC;
 
-  (*front)++;
+  return 0;
 }
 
 static struct queue pqueue[3];
@@ -197,6 +196,8 @@ userinit(void)
   // because the assignment might not be atomic.
   acquire(&ptable.lock);
 
+  p->priority = 2;
+  push(p);
   p->state = RUNNABLE;
 
   release(&ptable.lock);
@@ -263,6 +264,8 @@ fork(void)
 
   acquire(&ptable.lock);
 
+  np->priority = 2;
+  push(np);
   np->state = RUNNABLE;
 
   release(&ptable.lock);
@@ -435,6 +438,7 @@ void
 yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
+  push(myproc());
   myproc()->state = RUNNABLE;
   sched();
   release(&ptable.lock);
@@ -510,7 +514,10 @@ wakeup1(void *chan)
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan)
+    {
+      push(p);
       p->state = RUNNABLE;
+    }
 }
 
 // Wake up all processes sleeping on chan.
@@ -536,7 +543,10 @@ kill(int pid)
       p->killed = 1;
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING)
+      {
+        push(p);
         p->state = RUNNABLE;
+      }
       release(&ptable.lock);
       return 0;
     }
