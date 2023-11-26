@@ -46,7 +46,7 @@ dequeue(int *front, int *rear, struct proc *proc[])
   return 0;
 }
 
-static struct queue pqueue[3];
+static struct queue pqueue[MAXPRIO];
 
 void
 push(struct proc *p){
@@ -390,23 +390,27 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
+    for(int q = MAXPRIO - IDX; q > 0; q--){
+      for(p = pqueue[q].proc; p < &pqueue[q].proc[NPROC]; p++){
+        if(p->state != RUNNABLE)
+          continue;
+        // Remove process from ready queue and start runtimer.
+        pop(p);
+        roundtimer = 0;
+        // Switch to chosen process.  It is the process's job
+        // to release ptable.lock and then reacquire it
+        // before jumping back to us.
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
 
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
 
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
-
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
     }
     release(&ptable.lock);
 
