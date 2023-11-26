@@ -19,45 +19,56 @@ struct queue{
   struct proc *proc[NPROC];
   int front;
   int rear;
-  void (*enqueue)(struct proc *p, int *front, int *rear, struct proc *proc[]);
-  void (*dequeue)(struct proc *p, int *front, int *rear, struct proc *proc[]);
+  int (*enqueue)(struct proc *p, int *front, int *rear, struct proc *proc[]);
+  int (*dequeue)(struct proc *p, int *front, int *rear, struct proc *proc[]);
 };
 
 int
 enqueue(struct proc *p, int *front, int *rear, struct proc *proc[])
 {
-  if((*rear + 1) % NPROC == front) // Queue is full.
+  if (*front == -1) // Queue is empty.
+    *front = 0;
+  else if((*rear + 1) % NPROC == front) // Queue is full.
     return -1; 
-
   *rear = (*rear + 1) % NPROC;
-  proc[++(*rear)] = p;
-
+  proc[(*rear)] = p;
   return 0;
 }
 
 int
 dequeue(int *front, int *rear, struct proc *proc[])
 {
-  if(*front == *rear) // Queue is empty.
+  if(*front == -1) // Queue is empty.
     return -1;
-
   *front = (*front + 1) % NPROC;
-
   return 0;
 }
 
 static struct queue pqueue[MAXPRIO];
 
+void 
+qinit(void){
+  for(int i = 0; i < MAXPRIO; i++)
+  {
+    pqueue[i].front = -1;
+    pqueue[i].rear = -1;
+    pqueue[i].enqueue = enqueue;
+    pqueue[i].dequeue = dequeue;
+  }
+}
+
 void
 push(struct proc *p){
   int prio = p->priority - IDX;
-  pqueue[prio].enqueue(p, pqueue[prio].front, pqueue[prio].rear, pqueue[prio].proc);
+  if(pqueue[prio].enqueue(p, pqueue[prio].front, pqueue[prio].rear, pqueue[prio].proc) == -1)
+    cprintf("Error while pushing to queue %d\n", prio);
 }
 
 void 
 pop(struct proc *p){
   int prio = p->priority - IDX;
-  pqueue[prio].dequeue(p, pqueue[prio].front, pqueue[prio].rear, pqueue[prio].proc);
+  if(pqueue[prio].dequeue(p, pqueue[prio].front, pqueue[prio].rear, pqueue[prio].proc) == -1)
+    cprintf("Error while poping from queue %d\n", prio);
 }
 
 static struct proc *initproc;
@@ -391,9 +402,8 @@ scheduler(void)
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
     for(int q = MAXPRIO - IDX; q > 0; q--){
-      for(p = pqueue[q].proc; p < &pqueue[q].proc[NPROC]; p++){
-        if(p->state != RUNNABLE)
-          continue;
+      p = pqueue[q].proc[pqueue[q].front];
+      while(pqueue[q].front != pqueue[q].rear && p->state == RUNNABLE){
         // Remove process from ready queue and start runtimer.
         pop(p);
         roundtimer = 0;
@@ -410,6 +420,8 @@ scheduler(void)
         // Process is done running for now.
         // It should have changed its p->state before coming back.
         c->proc = 0;
+        
+        p = pqueue[q].proc[pqueue[q].front];
       }
     }
     release(&ptable.lock);
