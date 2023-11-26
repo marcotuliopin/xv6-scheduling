@@ -38,7 +38,12 @@ dequeue(int *front, int *rear, struct proc *proc[])
 {
   if(*front == -1) // Queue is empty.
     return -1;
-  *front = (*front + 1) % NPROC;
+  if(*front == *rear){ // There is only one element in the queue.
+    *front = -1;
+    *rear = -1;
+  }
+  else
+    *front = (*front + 1) % NPROC;
   return 0;
 }
 
@@ -401,7 +406,7 @@ scheduler(void)
     acquire(&ptable.lock);
     for(int q = MAXPRIO - IDX; q > 0; q--){
       p = pqueue[q].proc[pqueue[q].front];
-      while(pqueue[q].front != pqueue[q].rear && p->state == RUNNABLE){
+      while(pqueue[q].front != -1 && p->state == RUNNABLE){
         // Remove process from ready queue and start runtimer.
         pop(p);
         roundtimer = 0;
