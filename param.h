@@ -14,3 +14,5 @@
 #define INTERV	     5   // number of ticks before preemption
 #define MAX_PRIO     3
 #define IDX          1
+#define TO3        100
+#define TO2        200

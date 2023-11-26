@@ -134,6 +134,12 @@ allocproc(void)
   return 0;
 
 found:
+
+  p->ctime = ticks;
+  p->retime = 0;
+  p->rutime = 0;
+  p->stime = 0;
+
   p->state = EMBRYO;
   p->pid = nextpid++;
 
@@ -589,5 +595,19 @@ procdump(void)
         cprintf(" %p", pc[i]);
     }
     cprintf("\n");
+  }
+}
+
+void 
+procclock(void){
+  struct proc *p;
+
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if(p->state == RUNNABLE)
+      p->retime++;
+    else if(p->state == RUNNING)
+      p->rutime++;
+    else if(p->state == SLEEPING)
+      p->stime++;
   }
 }
