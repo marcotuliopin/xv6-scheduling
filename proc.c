@@ -7,6 +7,41 @@
 #include "proc.h"
 #include "spinlock.h"
 
+// implementacao de fila de prioridade
+#define MAX_PRIO 3;
+
+struct queue{
+  struct proc *proc[NPROC];
+  int front;
+  int rear;
+  void (*enqueue)(struct proc *p, int *front, int *rear, struct proc *proc[]);
+  void (*dequeue)(struct proc *p, int *front, int *rear, struct proc *proc[]);
+};
+
+void
+enqueue(struct proc *p, int *front, int *rear, struct proc *proc[])
+{
+  if(*rear == NPROC - 1) // loop back to beggining of the queue
+    *rear = -1;
+
+  if(*rear + 1 == front) // queue is full
+    return -1; 
+
+  proc[++(*rear)] = p;
+}
+
+void
+dequeue(struct proc *p, int *front, int *rear, struct proc *proc[])
+{
+  if(*front == *rear) // queue is empty
+    return -1;
+
+  if(*front == NPROC - 1) // loop back to beggining of the queue
+    *front = -1;
+
+  (*front)++;
+}
+
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -340,6 +375,12 @@ scheduler(void)
 
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+    for(int q = (int) MAX_PRIO; q > 0; q--) {
+      for(p = ptable.queue[q]; p < &ptable.queue[q][NPROC]; p++){
+        if(p->state != RUNNABLE)
+          continue;
+      }
+    }
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
