@@ -123,6 +123,8 @@ void            yield(void);
 void            procclock(void);
 void            growprio(void);
 void            qinit(void);
+int             enqueue(struct proc*, int*, int*, struct proc**);
+int             dequeue(int*, int*, struct proc**);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

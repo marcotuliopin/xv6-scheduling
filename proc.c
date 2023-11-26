@@ -24,13 +24,13 @@ struct queue{
   struct proc *proc[NPROC];
   int front;
   int rear;
-  int (*enqueue)(struct proc *p, int *front, int *rear, struct proc *proc[]);
-  int (*dequeue)(int *front, int *rear, struct proc *proc[]);
+  int (*enqueue)(struct proc *p, int *front, int *rear, struct proc **proc);
+  int (*dequeue)( int *front, int *rear, struct proc **proc);
 };
 
 // Adiciona processos a fila.
 int
-enqueue(struct proc *p, int *front, int *rear, struct proc *proc[])
+enqueue(struct proc *p, int *front, int *rear, struct proc **proc)
 {
   if (*front == -1) // Queue is empty.
     *front = 0;
@@ -43,7 +43,7 @@ enqueue(struct proc *p, int *front, int *rear, struct proc *proc[])
 
 // Remove processos da fila.
 int
-dequeue(int *front, int *rear, struct proc *proc[])
+dequeue(int *front, int *rear, struct proc **proc)
 {
   if(*front == -1) // Queue is empty.
     return -1;
