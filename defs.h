@@ -122,6 +122,7 @@ void            wakeup(void*);
 void            yield(void);
 void            procclock(void);
 void            growprio(void);
+void            qinit(void);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

@@ -10,11 +10,9 @@
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
-  // implementacao de fila de prioridade
 } ptable;
 
-// implementacao de fila de prioridade
-
+// Implementacao de fila de prioridade.
 struct queue{
   struct proc *proc[NPROC];
   int front;
@@ -44,7 +42,7 @@ dequeue(int *front, int *rear, struct proc *proc[])
   return 0;
 }
 
-static struct queue pqueue[MAXPRIO];
+struct queue pqueue[MAXPRIO];
 
 void 
 qinit(void){
