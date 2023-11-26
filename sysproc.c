@@ -89,3 +89,15 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+// implementacao da chamada de sistema de envelhecimento
+int
+sys_change_prio(void)
+{
+  int prio; // nova prioridade do processo
+
+  if(argint(0, &prio) < 0)
+    return -1;
+  myproc()->prio = prio;
+  return 0;
+}

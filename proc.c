@@ -10,6 +10,8 @@
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
+  // implementacao de fila de prioridade
+  struct proc *queue[3][NPROC];
 } ptable;
 
 static struct proc *initproc;
@@ -111,6 +113,12 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
+
+  // implementacao de fila de prioridade
+  p->prio = 2;
+  for (int i = 0; i < NPROC; i++)
+    if (!ptable.queue[p->prio-1][i])
+      ptable.queue[p->prio-1][i] = p;
 
   return p;
 }
