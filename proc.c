@@ -12,7 +12,14 @@ struct {
   struct proc proc[NPROC];
 } ptable;
 
-// Implementacao de fila de prioridade.
+// Implementacao de fila de prioridade. Considerei que todos
+// os processos da fila estarao com status de RUNNABLE.
+// A implementacao do scheduler nao funciona desobedecida
+// essa premissa.
+// Alterar essa implementacao nao é complicado, podendo ser usado
+// tres vetores estaticamente alocados como filas. Nesse caso, a
+// cada escalonamento, deve-se retirar o processo da fila com custo
+// O(n).
 struct queue{
   struct proc *proc[NPROC];
   int front;
@@ -21,6 +28,7 @@ struct queue{
   int (*dequeue)(struct proc *p, int *front, int *rear, struct proc *proc[]);
 };
 
+// Adiciona processos a fila.
 int
 enqueue(struct proc *p, int *front, int *rear, struct proc *proc[])
 {
@@ -33,6 +41,7 @@ enqueue(struct proc *p, int *front, int *rear, struct proc *proc[])
   return 0;
 }
 
+// Remove processos da fila.
 int
 dequeue(int *front, int *rear, struct proc *proc[])
 {
@@ -47,8 +56,10 @@ dequeue(int *front, int *rear, struct proc *proc[])
   return 0;
 }
 
+// Instanciacao da fila de prioridade.
 struct queue pqueue[MAXPRIO];
 
+// Inicializa a fila de prioridade. Chamada em main.c.
 void 
 qinit(void){
   for(int i = 0; i < MAXPRIO; i++)
@@ -60,6 +71,7 @@ qinit(void){
   }
 }
 
+// Interface para adicionar processos na fila.
 void
 push(struct proc *p){
   int prio = p->priority - IDX;
@@ -67,6 +79,7 @@ push(struct proc *p){
     cprintf("Error while pushing to queue %d\n", prio);
 }
 
+// Interface para remover processos da fila.
 void 
 pop(struct proc *p){
   int prio = p->priority - IDX;
@@ -149,6 +162,7 @@ allocproc(void)
 
 found:
 
+  // Comeca contagem de tempo para o processo.
   p->ctime = ticks;
   p->retime = 0;
   p->rutime = 0;
@@ -216,8 +230,8 @@ userinit(void)
   // because the assignment might not be atomic.
   acquire(&ptable.lock);
 
-  p->priority = 2;
-  push(p);
+  p->priority = 2; // Define prioridade inicial do processo.
+  push(p); // Adiciona processo a fila.
   p->state = RUNNABLE;
 
   release(&ptable.lock);
@@ -284,8 +298,8 @@ fork(void)
 
   acquire(&ptable.lock);
 
-  np->priority = 2;
-  push(np);
+  np->priority = 2; // Define prioridade inicial do processo.
+  push(np); // Adiciona processo a fila.
   np->state = RUNNABLE;
 
   release(&ptable.lock);
@@ -402,12 +416,14 @@ scheduler(void)
     // Enable interrupts on this processor.
     sti();
 
-    // Loop over process table looking for process to run.
+    // Loop over ready queues looking for process to run.
     acquire(&ptable.lock);
     for(int q = MAXPRIO - IDX; q > 0; q--){
       p = pqueue[q].proc[pqueue[q].front];
+      // Checa se ha processo na fila. Caso haja, checa se esse processo
+      // tem status RUNNABLE (sempre deve ser verdadeiro pela premissa).
       while(pqueue[q].front != -1 && p->state == RUNNABLE){
-        // Remove process from ready queue and start runtimer.
+        // Remove process from ready queue and start timer.
         pop(p);
         roundtimer = 0;
         // Switch to chosen process.  It is the process's job
@@ -540,7 +556,7 @@ wakeup1(void *chan)
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
     if(p->state == SLEEPING && p->chan == chan)
     {
-      push(p);
+      push(p); // Adiciona processo a fila.
       p->state = RUNNABLE;
     }
 }
@@ -569,7 +585,7 @@ kill(int pid)
       // Wake process from sleep if necessary.
       if(p->state == SLEEPING)
       {
-        push(p);
+        push(p); // Adiciona processo a fila.
         p->state = RUNNABLE;
       }
       release(&ptable.lock);
@@ -617,6 +633,7 @@ procdump(void)
   }
 }
 
+// Atualiza contadores de tempo para todos os processos em cada tick.
 void 
 procclock(void){
   struct proc *p;
@@ -631,14 +648,21 @@ procclock(void){
   }
 }
 
+// Realiza politica de envelhecimento.
 void
 growprio(void){
   struct proc *p;
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-    if(p->priority == 1 && (ticks - p->ctime) % TO2 == 0)
+    if(p->priority == 1 && (ticks - p->ctime) % TO2 == 0){
+      pop(p);
       p->priority = 2;
-    else if(p->priority == 2 && (ticks - p->ctime) % TO3 == 0)
+      push(p);
+    }
+    else if(p->priority == 2 && (ticks - p->ctime) % TO3 == 0){
+      pop(p);
       p->priority = 3;
+      push(p);
+    }
   }
 }
