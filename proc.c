@@ -25,7 +25,7 @@ struct queue{
   int front;
   int rear;
   int (*enqueue)(struct proc *p, int *front, int *rear, struct proc *proc[]);
-  int (*dequeue)(struct proc *p, int *front, int *rear, struct proc *proc[]);
+  int (*dequeue)(int *front, int *rear, struct proc *proc[]);
 };
 
 // Adiciona processos a fila.
